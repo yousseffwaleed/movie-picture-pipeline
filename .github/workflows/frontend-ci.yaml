@@ -1,0 +1,84 @@
+name: Frontend Continuous Integration
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "starter/frontend/**"
+
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: starter/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: actions/cache@v4
+        with:
+          path: starter/frontend/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('starter/frontend/package-lock.json') }}
+
+      - run: npm install
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: starter/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: actions/cache@v4
+        with:
+          path: starter/frontend/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('starter/frontend/package-lock.json') }}
+
+      - run: npm install
+      - run: CI=true npm test
+
+  build:
+    needs:
+      - lint
+      - test
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: starter/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: actions/cache@v4
+        with:
+          path: starter/frontend/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('starter/frontend/package-lock.json') }}
+
+      - run: npm install
+
+      - name: Build Docker image
+        run: |
+          docker build -t frontend:${{ github.sha }} .
