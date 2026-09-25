@@ -111,7 +111,6 @@ jobs:
             fi
 
             if [ -n "$BACKEND_HOST" ]; then
-              echo "Backend API URL: http://${BACKEND_HOST}"
               echo "REACT_APP_MOVIE_API_URL=http://${BACKEND_HOST}" >> "$GITHUB_ENV"
               exit 0
             fi
@@ -126,7 +125,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            --build-arg REACT_APP_MOVIE_API_URL="$REACT_APP_MOVIE_API_URL" \
+            --build-arg REACT_APP_MOVIE_API_URL=${{ env.REACT_APP_MOVIE_API_URL }} \
             -t frontend:${{ github.sha }} .
 
           docker tag frontend:${{ github.sha }} 868825397679.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
