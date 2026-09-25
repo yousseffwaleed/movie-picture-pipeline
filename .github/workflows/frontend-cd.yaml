@@ -9,9 +9,6 @@ on:
 
   workflow_dispatch:
 
-env:
-  BACKEND_API_URL: ${{ vars.BACKEND_API_URL }}
-
 jobs:
   lint:
     name: Lint
@@ -104,16 +101,31 @@ jobs:
         run: |
           aws eks update-kubeconfig --name cluster --region us-east-1
 
-      - name: Configure backend API URL
+      - name: Resolve backend LoadBalancer URL
         run: |
-          if [ -z "$BACKEND_API_URL" ]; then
-            echo "BACKEND_API_URL repository variable is not set."
-            echo "Set it to the public backend LoadBalancer URL, for example: http://backend.example.com"
-            exit 1
-          fi
+          kubectl rollout status deployment/backend --timeout=5m
 
-          echo "Backend API URL: ${BACKEND_API_URL}"
-          echo "REACT_APP_MOVIE_API_URL=${BACKEND_API_URL}" >> "$GITHUB_ENV"
+          for attempt in {1..60}; do
+            BACKEND_HOST=$(kubectl get service backend -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+
+            if [ -z "$BACKEND_HOST" ]; then
+              BACKEND_HOST=$(kubectl get service backend -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            fi
+
+            if [ -n "$BACKEND_HOST" ]; then
+              echo "Backend API URL: http://${BACKEND_HOST}"
+              echo "REACT_APP_MOVIE_API_URL=http://${BACKEND_HOST}" >> "$GITHUB_ENV"
+              exit 0
+            fi
+
+            echo "Waiting for the backend LoadBalancer address (attempt ${attempt}/60)..."
+            sleep 10
+          done
+
+          echo "Backend LoadBalancer address was not available."
+          kubectl get service backend -o wide || true
+          kubectl describe service backend || true
+          exit 1
 
       - name: Build Docker image
         run: |
