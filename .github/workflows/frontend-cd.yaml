@@ -115,7 +115,7 @@ jobs:
               exit 0
             fi
 
-            echo "Waiting for the backend LoadBalancer address (attempt ${attempt}/30)..."
+            echo "Waiting for backend LoadBalancer address (attempt ${attempt}/30)..."
             sleep 10
           done
 
@@ -128,11 +128,13 @@ jobs:
             --build-arg REACT_APP_MOVIE_API_URL=${{ env.REACT_APP_MOVIE_API_URL }} \
             -t frontend:${{ github.sha }} .
 
-          docker tag frontend:${{ github.sha }} 868825397679.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
+          docker tag frontend:${{ github.sha }} \
+          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
 
       - name: Push Docker image
         run: |
-          docker push 868825397679.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
+          docker push \
+          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
 
       - name: Install Kustomize
         run: |
@@ -142,5 +144,5 @@ jobs:
       - name: Deploy frontend
         working-directory: starter/frontend/k8s
         run: |
-          kustomize edit set image frontend=868825397679.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
+          kustomize edit set image frontend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/frontend:${{ github.sha }}
           kustomize build | kubectl apply -f -
