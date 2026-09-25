@@ -99,11 +99,11 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t backend:${{ github.sha }} .
-          docker tag backend:${{ github.sha }} 868825397679.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
+          docker tag backend:${{ github.sha }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
       - name: Push Docker image
         run: |
-          docker push 868825397679.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -120,5 +120,5 @@ jobs:
       - name: Deploy backend
         working-directory: starter/backend/k8s
         run: |
-          kustomize edit set image backend=868825397679.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
+          kustomize edit set image backend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/backend:${{ github.sha }}
           kustomize build | kubectl apply -f -
